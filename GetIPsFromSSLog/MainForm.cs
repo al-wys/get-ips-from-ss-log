@@ -24,7 +24,9 @@ namespace GetIPsFromSSLog
             if (ofdSsLog.CheckFileExists)
             {
                 var ipSet = new HashSet<string>();
-                var ipInfoBuilder = new StringBuilder();
+                var ipInfoBuilder = new StringBuilder("First time that this IP shows\tIP"); // Initial StringBuilder with table header
+                ipInfoBuilder.AppendLine();
+                ipInfoBuilder.AppendLine();
 
                 var lineNum = 0;
 
@@ -49,7 +51,12 @@ namespace GetIPsFromSSLog
                                 if (!ipSet.Contains(ip))
                                 {
                                     ipSet.Add(ip);
-                                    ipInfoBuilder.AppendLine(ip);
+
+                                    // Get the time as fisrt UTC time that this IP shows
+                                    var timeStr = lineText.Substring(0, 19);
+                                    var firstTimeInUtc = DateTime.SpecifyKind(DateTime.Parse(timeStr), DateTimeKind.Utc);
+
+                                    ipInfoBuilder.AppendLine($"{firstTimeInUtc.ToLocalTime()}\t{ip}");
                                 }
                             }
 
