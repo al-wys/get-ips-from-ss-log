@@ -73,7 +73,7 @@ namespace GetIPsFromSSLog
                 foreach (var ip in ipList)
                 {
                     var times = ipTimes[ip];
-                    ipInfoBuilder.AppendLine($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{(times.LastTime - times.FirstTime).Days} day(s)");
+                    ipInfoBuilder.AppendLine($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{(times.LastTime - times.FirstTime).TotalDays} day(s)");
                 }
 
                 // Get the total counts in the information
