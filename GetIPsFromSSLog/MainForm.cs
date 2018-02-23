@@ -23,8 +23,9 @@ namespace GetIPsFromSSLog
         {
             if (ofdSsLog.CheckFileExists)
             {
-                var ipSet = new HashSet<string>();
-                var ipInfoBuilder = new StringBuilder("First time that this IP shows\tIP"); // Initial StringBuilder with table header
+                var ipList = new List<string>();
+                var ipTimes = new Dictionary<string, Times>();
+                var ipInfoBuilder = new StringBuilder("First time that this IP shows\tIP\t\t\tLast time that this IP shows\tSpan"); // Initial StringBuilder with table header "First time that this IP shows   IP        Last time that this IP shows  Span"
                 ipInfoBuilder.AppendLine();
                 ipInfoBuilder.AppendLine();
 
@@ -47,16 +48,19 @@ namespace GetIPsFromSSLog
 
                                 var ip = lineText.Substring(startIndex, endIndex - startIndex);
 
+                                // Get the UTC time
+                                var timeStr = lineText.Substring(0, 19);
+                                var timeInUtc = DateTime.SpecifyKind(DateTime.Parse(timeStr), DateTimeKind.Utc);
+
                                 // Append this IP if it wasn't contained in the list
-                                if (!ipSet.Contains(ip))
+                                if (!ipTimes.ContainsKey(ip))
                                 {
-                                    ipSet.Add(ip);
-
-                                    // Get the time as fisrt UTC time that this IP shows
-                                    var timeStr = lineText.Substring(0, 19);
-                                    var firstTimeInUtc = DateTime.SpecifyKind(DateTime.Parse(timeStr), DateTimeKind.Utc);
-
-                                    ipInfoBuilder.AppendLine($"{firstTimeInUtc.ToLocalTime()}\t{ip}");
+                                    ipList.Add(ip);
+                                    ipTimes.Add(ip, new Times { FirstTime = timeInUtc, LastTime = timeInUtc });
+                                }
+                                else
+                                {
+                                    ipTimes[ip].LastTime = timeInUtc;
                                 }
                             }
 
@@ -65,12 +69,28 @@ namespace GetIPsFromSSLog
                     }
                 }
 
-                // Get the line number in the information
+                // Build the result
+                foreach (var ip in ipList)
+                {
+                    var times = ipTimes[ip];
+                    ipInfoBuilder.AppendLine($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{(times.LastTime - times.FirstTime).Days} day(s)");
+                }
+
+                // Get the total counts in the information
                 ipInfoBuilder.AppendLine();
-                ipInfoBuilder.AppendFormat("Total line number: {0}", lineNum);
+                ipInfoBuilder.AppendFormat("Total ip count: {0}", ipList.Count);
+                ipInfoBuilder.AppendLine();
+                ipInfoBuilder.AppendFormat("Total line count: {0}", lineNum);
 
                 txtIPs.Text = ipInfoBuilder.ToString();
             }
         }
+    }
+
+    class Times
+    {
+        internal DateTime FirstTime { get; set; }
+
+        internal DateTime LastTime { get; set; }
     }
 }

@@ -56,14 +56,14 @@
             this.txtIPs.Name = "txtIPs";
             this.txtIPs.ReadOnly = true;
             this.txtIPs.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtIPs.Size = new System.Drawing.Size(498, 315);
+            this.txtIPs.Size = new System.Drawing.Size(935, 599);
             this.txtIPs.TabIndex = 1;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(557, 460);
+            this.ClientSize = new System.Drawing.Size(1033, 769);
             this.Controls.Add(this.txtIPs);
             this.Controls.Add(this.btnChoseFile);
             this.Name = "MainForm";
