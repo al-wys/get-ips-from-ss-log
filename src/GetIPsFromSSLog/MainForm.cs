@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
 
 namespace GetIPsFromSSLog
@@ -12,6 +12,24 @@ namespace GetIPsFromSSLog
         public MainForm()
         {
             InitializeComponent();
+        }
+
+        /// <summary>
+        /// Append a new line text into txtIPs with color
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="color"></param>
+        private void AppendLineWithColor(string text, Color color)
+        {
+            txtIPs.SelectionStart = txtIPs.TextLength;
+            txtIPs.SelectionLength = 0;
+
+            txtIPs.SelectionColor = color;
+            txtIPs.AppendText(text);
+            txtIPs.SelectionColor = txtIPs.ForeColor;
+
+            // Append new line at the end
+            txtIPs.AppendText(Environment.NewLine);
         }
 
         private void btnChoseFile_Click(object sender, EventArgs e)
@@ -25,9 +43,9 @@ namespace GetIPsFromSSLog
             {
                 var ipList = new List<string>();
                 var ipTimes = new Dictionary<string, Times>();
-                var ipInfoBuilder = new StringBuilder("First time that this IP shows\tIP\t\t\tLast time that this IP shows\tSpan"); // Initial StringBuilder with table header "First time that this IP shows   IP        Last time that this IP shows  Span"
-                ipInfoBuilder.AppendLine();
-                ipInfoBuilder.AppendLine();
+                var titleColor = Color.Black;
+                AppendLineWithColor("First time that this IP shows\tIP\t\t\tLast time that this IP shows\tSpan", titleColor); // Initial StringBuilder with table header "First time that this IP shows   IP        Last time that this IP shows  Span"
+                txtIPs.AppendText(Environment.NewLine);
 
                 var lineNum = 0;
 
@@ -35,6 +53,11 @@ namespace GetIPsFromSSLog
                 {
                     using (var reader = new StreamReader(logFileStream))
                     {
+                        var currentUtcTime = DateTime.UtcNow;
+                        var warnHourSpan = 12; // Warn the info if time span is less than 12 hours
+                        var defaultColor = Color.Gray;
+                        var warnColor = Color.OrangeRed;
+
                         while (!reader.EndOfStream)
                         {
                             // sample: 2018-01-29 13:32:10 INFO     connecting x.x.x.x:xxxx from x.x.x.x:xxxx
@@ -56,11 +79,21 @@ namespace GetIPsFromSSLog
                                 if (!ipTimes.ContainsKey(ip))
                                 {
                                     ipList.Add(ip);
-                                    ipTimes.Add(ip, new Times { FirstTime = timeInUtc, LastTime = timeInUtc });
+                                    ipTimes.Add(ip, new Times
+                                    {
+                                        FirstTime = timeInUtc,
+                                        LastTime = timeInUtc,
+                                        TextColor = (currentUtcTime - timeInUtc).TotalHours > warnHourSpan ? defaultColor : warnColor
+                                    });
                                 }
                                 else
                                 {
                                     ipTimes[ip].LastTime = timeInUtc;
+
+                                    if ((currentUtcTime - timeInUtc).TotalHours <= warnHourSpan)
+                                    {
+                                        ipTimes[ip].TextColor = warnColor;
+                                    }
                                 }
                             }
 
@@ -74,16 +107,14 @@ namespace GetIPsFromSSLog
                 {
                     var times = ipTimes[ip];
                     var daySpan = (times.LastTime - times.FirstTime).TotalDays.ToString("0.00");
-                    ipInfoBuilder.AppendLine($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{daySpan} day(s)");
+
+                    AppendLineWithColor($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{daySpan} day(s)", times.TextColor);
                 }
 
                 // Get the total counts in the information
-                ipInfoBuilder.AppendLine();
-                ipInfoBuilder.AppendFormat("Total ip count: {0}", ipList.Count);
-                ipInfoBuilder.AppendLine();
-                ipInfoBuilder.AppendFormat("Total line count: {0}", lineNum);
-
-                txtIPs.Text = ipInfoBuilder.ToString();
+                txtIPs.AppendText(Environment.NewLine);
+                AppendLineWithColor($"Total ip count: {ipList.Count}", titleColor);
+                AppendLineWithColor($"Total line count: {lineNum}", titleColor);
             }
         }
     }
@@ -93,5 +124,7 @@ namespace GetIPsFromSSLog
         internal DateTime FirstTime { get; set; }
 
         internal DateTime LastTime { get; set; }
+
+        internal Color TextColor { get; set; }
     }
 }

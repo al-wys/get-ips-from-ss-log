@@ -30,7 +30,7 @@
         {
             this.ofdSsLog = new System.Windows.Forms.OpenFileDialog();
             this.btnChoseFile = new System.Windows.Forms.Button();
-            this.txtIPs = new System.Windows.Forms.TextBox();
+            this.txtIPs = new System.Windows.Forms.RichTextBox();
             this.SuspendLayout();
             // 
             // ofdSsLog
@@ -55,7 +55,7 @@
             this.txtIPs.Multiline = true;
             this.txtIPs.Name = "txtIPs";
             this.txtIPs.ReadOnly = true;
-            this.txtIPs.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtIPs.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.txtIPs.Size = new System.Drawing.Size(935, 599);
             this.txtIPs.TabIndex = 1;
             // 
@@ -78,7 +78,7 @@
 
         private System.Windows.Forms.OpenFileDialog ofdSsLog;
         private System.Windows.Forms.Button btnChoseFile;
-        private System.Windows.Forms.TextBox txtIPs;
+        private System.Windows.Forms.RichTextBox txtIPs;
     }
 }
 
