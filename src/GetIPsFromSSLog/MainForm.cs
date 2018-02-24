@@ -41,6 +41,8 @@ namespace GetIPsFromSSLog
         {
             if (ofdSsLog.CheckFileExists)
             {
+                txtIPs.Clear(); // Clear all texts before show new result
+
                 var ipList = new List<string>();
                 var ipTimes = new Dictionary<string, Times>();
                 var titleColor = Color.Black;
