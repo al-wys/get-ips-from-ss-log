@@ -46,7 +46,6 @@ namespace GetIPsFromSSLog
             var ipList = new List<string>();
             var ipTimes = new Dictionary<string, Times>();
             var titleColor = Color.Black;
-            var lineNum = 0;
 
             var logFileStream = ofdSsLog.OpenFile();
 
@@ -72,11 +71,12 @@ namespace GetIPsFromSSLog
 
                             var ip = lineText.Substring(startIndex, endIndex - startIndex);
 
-                            try
+                            // Get the UTC time
+                            var timeStr = lineText.Substring(0, 19);
+
+                            if (DateTime.TryParse(timeStr, out DateTime timeInUtc))
                             {
-                                // Get the UTC time
-                                var timeStr = lineText.Substring(0, 19);
-                                var timeInUtc = DateTime.SpecifyKind(DateTime.Parse(timeStr), DateTimeKind.Utc);
+                                timeInUtc = DateTime.SpecifyKind(timeInUtc, DateTimeKind.Utc);
 
                                 // Append this IP if it wasn't contained in the list
                                 if (!ipTimes.ContainsKey(ip))
@@ -99,15 +99,7 @@ namespace GetIPsFromSSLog
                                     }
                                 }
                             }
-                            catch (Exception)
-                            {
-                                // This line is a error line, should not be counted
-                                lineNum--;
-                                continue;
-                            }
                         }
-
-                        lineNum++;
                     }
                 }
             });
@@ -133,7 +125,6 @@ namespace GetIPsFromSSLog
             // Get the total counts in the information
             txtIPs.AppendText(Environment.NewLine);
             AppendLineWithColor($"Total ip count: {ipList.Count}", titleColor);
-            AppendLineWithColor($"Total line count: {lineNum}", titleColor);
 
             // Enable the button after the result is shown
             btnChoseFile.Enabled = true;
