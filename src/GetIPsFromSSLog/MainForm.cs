@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GetIPsFromSSLog
@@ -32,47 +33,47 @@ namespace GetIPsFromSSLog
             txtIPs.AppendText(Environment.NewLine);
         }
 
-        private void btnChoseFile_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Show results in txtIPs
+        /// </summary>
+        /// <returns></returns>
+        private async Task ShowIpResultsAsync()
         {
-            ofdSsLog.ShowDialog();
-        }
+            // Disable the button and show "Loading..." when the job is runing
+            btnChoseFile.Enabled = false;
+            txtIPs.Text = "Loading...";
 
-        private void ofdSsLog_FileOk(object sender, CancelEventArgs e)
-        {
-            if (ofdSsLog.CheckFileExists)
+            var ipList = new List<string>();
+            var ipTimes = new Dictionary<string, Times>();
+            var titleColor = Color.Black;
+            var lineNum = 0;
+
+            var logFileStream = ofdSsLog.OpenFile();
+
+            await Task.Run(() =>
             {
-                txtIPs.Clear(); // Clear all texts before show new result
-
-                var ipList = new List<string>();
-                var ipTimes = new Dictionary<string, Times>();
-                var titleColor = Color.Black;
-                AppendLineWithColor("First time that this IP shows\tIP\t\t\tLast time that this IP shows\tSpan", titleColor); // Initial StringBuilder with table header "First time that this IP shows   IP        Last time that this IP shows  Span"
-                txtIPs.AppendText(Environment.NewLine);
-
-                var lineNum = 0;
-
-                using (var logFileStream = ofdSsLog.OpenFile())
+                using (var reader = new StreamReader(logFileStream))
                 {
-                    using (var reader = new StreamReader(logFileStream))
+                    var currentUtcTime = DateTime.UtcNow;
+                    var warnHourSpan = 12; // Warn the info if time span is less than 12 hours
+                    var defaultColor = Color.Gray;
+                    var warnColor = Color.OrangeRed;
+
+                    while (!reader.EndOfStream)
                     {
-                        var currentUtcTime = DateTime.UtcNow;
-                        var warnHourSpan = 12; // Warn the info if time span is less than 12 hours
-                        var defaultColor = Color.Gray;
-                        var warnColor = Color.OrangeRed;
+                        // sample: 2018-01-29 13:32:10 INFO     connecting x.x.x.x:xxxx from x.x.x.x:xxxx
+                        var lineText = reader.ReadLine();
+                        var startIndex = lineText.IndexOf("from ");
 
-                        while (!reader.EndOfStream)
+                        if (startIndex > -1)
                         {
-                            // sample: 2018-01-29 13:32:10 INFO     connecting x.x.x.x:xxxx from x.x.x.x:xxxx
-                            var lineText = reader.ReadLine();
-                            var startIndex = lineText.IndexOf("from ");
+                            startIndex += 5;
+                            var endIndex = lineText.LastIndexOf(':');
 
-                            if (startIndex > -1)
+                            var ip = lineText.Substring(startIndex, endIndex - startIndex);
+
+                            try
                             {
-                                startIndex += 5;
-                                var endIndex = lineText.LastIndexOf(':');
-
-                                var ip = lineText.Substring(startIndex, endIndex - startIndex);
-
                                 // Get the UTC time
                                 var timeStr = lineText.Substring(0, 19);
                                 var timeInUtc = DateTime.SpecifyKind(DateTime.Parse(timeStr), DateTimeKind.Utc);
@@ -98,25 +99,56 @@ namespace GetIPsFromSSLog
                                     }
                                 }
                             }
-
-                            lineNum++;
+                            catch (Exception)
+                            {
+                                // This line is a error line, should not be counted
+                                lineNum--;
+                                continue;
+                            }
                         }
+
+                        lineNum++;
                     }
                 }
+            });
 
-                // Build the result
-                foreach (var ip in ipList)
-                {
-                    var times = ipTimes[ip];
-                    var daySpan = (times.LastTime - times.FirstTime).TotalDays.ToString("0.00");
+            // Dispose the resource after the content is read
+            logFileStream.Dispose();
 
-                    AppendLineWithColor($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{daySpan} day(s)", times.TextColor);
-                }
+            txtIPs.Clear(); // Clear all texts before show new result
 
-                // Get the total counts in the information
-                txtIPs.AppendText(Environment.NewLine);
-                AppendLineWithColor($"Total ip count: {ipList.Count}", titleColor);
-                AppendLineWithColor($"Total line count: {lineNum}", titleColor);
+            // Initial text area with table header "First time that this IP shows   IP        Last time that this IP shows  Span"
+            AppendLineWithColor("First time that this IP shows\tIP\t\t\tLast time that this IP shows\tSpan", titleColor);
+            txtIPs.AppendText(Environment.NewLine);
+
+            // Build the result
+            foreach (var ip in ipList)
+            {
+                var times = ipTimes[ip];
+                var daySpan = (times.LastTime - times.FirstTime).TotalDays.ToString("0.00");
+
+                AppendLineWithColor($"{times.FirstTime.ToLocalTime()}\t{ip}\t\t{times.LastTime.ToLocalTime()}\t{daySpan} day(s)", times.TextColor);
+            }
+
+            // Get the total counts in the information
+            txtIPs.AppendText(Environment.NewLine);
+            AppendLineWithColor($"Total ip count: {ipList.Count}", titleColor);
+            AppendLineWithColor($"Total line count: {lineNum}", titleColor);
+
+            // Enable the button after the result is shown
+            btnChoseFile.Enabled = true;
+        }
+
+        private void btnChoseFile_Click(object sender, EventArgs e)
+        {
+            ofdSsLog.ShowDialog();
+        }
+
+        private async void ofdSsLog_FileOkAsync(object sender, CancelEventArgs e)
+        {
+            if (ofdSsLog.CheckFileExists)
+            {
+                await ShowIpResultsAsync();
             }
         }
     }

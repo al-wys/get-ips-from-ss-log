@@ -37,7 +37,7 @@
             // 
             this.ofdSsLog.FileName = "SS Log";
             this.ofdSsLog.Filter = "Log files (*.log)|*.log";
-            this.ofdSsLog.FileOk += new System.ComponentModel.CancelEventHandler(this.ofdSsLog_FileOk);
+            this.ofdSsLog.FileOk += new System.ComponentModel.CancelEventHandler(this.ofdSsLog_FileOkAsync);
             // 
             // btnChoseFile
             // 
